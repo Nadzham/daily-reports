@@ -1,0 +1,50 @@
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+from datetime import datetime
+import os
+
+# Функция для отправки письма
+def send_email(subject, body, to_addr, from_addr, password, attachment_path=None):
+    # Создаем объект сообщения
+    msg = MIMEMultipart()
+    msg['From'] = from_addr
+    msg['To'] = to_addr
+    msg['Subject'] = subject
+
+    # Добавляем тело письма
+    msg.attach(MIMEText(body, 'plain'))
+
+    # Если есть вложение, добавляем его
+    if attachment_path:
+        attachment = open(attachment_path, 'rb')
+
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload((attachment).read())
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename= {os.path.basename(attachment_path)}')
+
+        msg.attach(part)
+
+    # Подключаемся к SMTP-серверу и отправляем письмо
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(from_addr, password)
+    text = msg.as_string()
+    server.sendmail(from_addr, to_addr, text)
+    server.quit()
+
+# Настройки
+from_addr = "your_email@gmail.com"
+password = "your_password"
+to_addr = "recipient_email@example.com"
+subject = "Ежедневный отчет " + datetime.now().strftime("%Y-%m-%d")
+body = "Добрый день!\n\nОтправляю вам ежедневный отчет.\n\nС уважением,\nВаше Имя"
+
+# Укажите путь к файлу с отчетом, если он есть
+attachment_path = "/path/to/report.pdf"  # Или None, если вложения нет
+
+# Отправляем письмо
+send_email(subject, body, to_addr, from_addr, password, attachment_path)
